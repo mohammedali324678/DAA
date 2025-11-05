@@ -1,0 +1,76 @@
+import matplotlib.pyplot as plt
+
+def greedy_profit(prices):
+    profit = 0
+    trades = []
+    for i in range(1, len(prices)):
+        if prices[i] > prices[i - 1]:
+            profit += prices[i] - prices[i - 1]
+            trades.append((i - 1, i))
+    return profit, trades
+
+
+def max_profit_divide_conquer(prices, start, end):
+    if start >= end:
+        return 0, start, end
+
+    mid = (start + end) // 2
+    left_profit, left_buy, left_sell = max_profit_divide_conquer(prices, start, mid)
+    right_profit, right_buy, right_sell = max_profit_divide_conquer(prices, mid + 1, end)
+
+    min_left_price = min(prices[start:mid + 1])
+    max_right_price = max(prices[mid + 1:end + 1])
+    cross_profit = max_right_price - min_left_price
+
+    cross_buy = prices.index(min_left_price, start, mid + 1)
+    cross_sell = prices.index(max_right_price, mid + 1, end + 1)
+
+    if left_profit >= right_profit and left_profit >= cross_profit:
+        return left_profit, left_buy, left_sell
+    elif right_profit >= left_profit and right_profit >= cross_profit:
+        return right_profit, right_buy, right_sell
+    else:
+        return cross_profit, cross_buy, cross_sell
+
+
+prices_str = input("Enter daily stock prices (comma separated): ")
+prices = [float(x.strip()) for x in prices_str.split(",") if x.strip()]
+
+greedy_total, greedy_trades = greedy_profit(prices)
+dc_profit, dc_buy, dc_sell = max_profit_divide_conquer(prices, 0, len(prices) - 1)
+
+print("\n================= STOCK PROFIT ANALYZER =================")
+print("Entered Prices:", prices)
+print("----------------------------------------------------------")
+print("Using GREEDY ALGORITHM (Multiple Transactions):")
+print(f"   Total Profit: ₹{greedy_total:.2f}")
+if greedy_trades:
+    print("   Recommended Buy/Sell Days:")
+    for buy, sell in greedy_trades:
+        print(f"      Buy on Day {buy} at ₹{prices[buy]:.2f} → Sell on Day {sell} at ₹{prices[sell]:.2f}")
+else:
+    print("   No profitable trades found.")
+print("----------------------------------------------------------")
+print("Using DIVIDE & CONQUER (Single Transaction):")
+print(f"   Best Buy Day: {dc_buy} at ₹{prices[dc_buy]:.2f}")
+print(f"   Best Sell Day: {dc_sell} at ₹{prices[dc_sell]:.2f}")
+print(f"   Maximum Profit: ₹{dc_profit:.2f}")
+print("===========================================================")
+
+plt.figure(figsize=(9,5))
+plt.plot(prices, marker='o', color='blue', label='Stock Price')
+
+for buy, sell in greedy_trades:
+    plt.scatter(buy, prices[buy], color='green', s=100)
+    plt.scatter(sell, prices[sell], color='red', s=100)
+    plt.plot([buy, sell], [prices[buy], prices[sell]], color='gray', linestyle='--')
+
+plt.scatter(dc_buy, prices[dc_buy], color='lime', s=120, marker='^', label='Divide & Conquer Buy')
+plt.scatter(dc_sell, prices[dc_sell], color='orange', s=120, marker='v', label='Divide & Conquer Sell')
+
+plt.title("Stock Price Trend: Greedy vs Divide & Conquer")
+plt.xlabel("Day")
+plt.ylabel("Price (₹)")
+plt.legend()
+plt.grid(True)
+plt.show()
